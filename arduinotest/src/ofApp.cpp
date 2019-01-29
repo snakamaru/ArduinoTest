@@ -1,7 +1,24 @@
 #include "ofApp.h"
 
+#define MINSCALE 0.3;
+#define MAXSCALE 0.8;
+
 //半径の初期値を定義
-int inputVal = 10;
+int inputVal = 50;
+int inputMax =500;
+int inputMin= 300;
+
+float MINDIAMETER = 768 * MINSCALE;
+float MAXDIAMETER = 768 * MAXSCALE;
+
+//初期の半径の大きさと変数によるステップ値
+float stepInit = (MAXDIAMETER-MINDIAMETER)/100;
+float step = (MAXDIAMETER-MINDIAMETER)/80;
+float level = 50;
+float diameter = (MINDIAMETER + MAXDIAMETER) * 0.5;
+//コマンドモードとアナログモードを切り替える, 1AnalogMode, 2CommandMode
+
+int mode = 1;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -84,10 +101,28 @@ void ofApp::draw(){
     }
     ofSetHexColor(0xFFFFFF);
     ofDrawBitmapString(msg, 20,20);
+
     
-//    ArduinoのA0の値に応じてサークルの形を変形させる
-//        ofDrawCircle(ofVec2f(position), radius);
-        ofDrawCircle(ofVec2f(ofGetWidth()/2, ofGetHeight()/2), ::inputVal);
+    //Arduino Modeの時は値を更新する
+    if (mode==1){
+        inputVal = ard.getAnalog(0);
+    }
+
+    if (mode==3){
+        ofCallibration();
+    }
+    //    右上にモードを表示する
+    ofIndicator(mode);
+    
+    level = (inputVal-inputMin)/step;
+    float diameter = MINDIAMETER + level * stepInit;
+    // 円を描画する
+    ofDrawCircle(ofVec2f(ofGetWidth()/2, ofGetHeight()/2), diameter/2);
+
+    std::cout<<"InputVal:"<< inputVal << endl;
+    std::cout<<"Diameter:"<< diameter << endl;
+    std::cout<<"InputMax:"<< inputMax << endl;
+    std::cout<<"InputMin:"<< inputMin << endl;
 }
 
 //--------------------------------------------------------------
@@ -97,13 +132,32 @@ void ofApp::keyPressed(int key){
             //        fでフルスクリーン
         case 'f':
             ofToggleFullscreen();
-        case 'u':
-            ::inputVal += 10;
-        case 'd':
-            ::inputVal --;
-            
             break;
-    }}
+            //cを押すことでアナログとキー入力モードが切り替わる
+        case 'c':
+            if(mode == 1){
+                mode = 2;}
+            else if(mode==2){
+                mode =3;
+            }
+            else if(mode==3){
+                mode =1;
+            }
+            break;
+   
+//            lキーによりサークルをより大きく表示する
+        case'l':
+            ::inputVal += 5;
+            break;
+            
+//  sキーによりサークルをより小さくする
+        case 's':
+            ::inputVal -= 5;
+            break;
+            
+    }
+    
+}
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
@@ -154,3 +208,31 @@ void ofApp::gotMessage(ofMessage msg){
 void ofApp::dragEvent(ofDragInfo dragInfo){ 
     
 }
+
+//現在のコマンドモードを表示する
+void ofApp::ofIndicator(int mode){
+    if(mode ==1){
+//        inputVal = ard.getAnalog(0);
+        ofDrawBitmapString("ARDUINO MODE", ofGetWidth()-120,20);
+    }
+    else if (mode ==2){
+        ofDrawBitmapString("COMMAND MODE", ofGetWidth()-120,20);
+    }
+    else if (mode ==3){
+        ofDrawBitmapString("CALLIBRATION MODE", ofGetWidth()-120,20);
+    }
+}
+
+void ofApp::ofCallibration(){
+//    センサの呼吸状態から最小最大の値を更新する
+    if (inputMax < ard.getAnalog(0)){
+        inputMax = ard.getAnalog(0);
+    }
+    else if (inputMin> ard.getAnalog(0)){
+        inputMin=ard.getAnalog(0);
+    }
+    
+    //Max, Minの値から円の大きさの刻み幅を指定
+    step = (inputMax - inputMin) /100 ;
+    
+    }

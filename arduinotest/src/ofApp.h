@@ -22,6 +22,9 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 
+        void ofIndicator(int mode);
+        void ofCallibration();
+    
 //Arduinoに必要な内容を追加
 //    ofImage                bgImage;
 //    ofTrueTypeFont        font;
